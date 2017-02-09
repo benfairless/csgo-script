@@ -134,7 +134,7 @@ SERVER
   cat <<COMPETITIVE > "${CONF}/gamemode_competitive_server.cfg"
 // Game mode
 mp_halftime                         1
-mp_halftime_duration                60
+mp_halftime_duration                120
 mp_halftime_pausetimer              0
 mp_match_can_clinch                 1 // 0=No mercy, 1=Win > 1/2 total rounds
 mp_maxrounds                        15
