@@ -107,6 +107,13 @@ sv_cheats     0  // CHEAT MODE
 sv_lan        0
 sv_maxrate    0
 sv_pausable   1
+
+// 128 TICK RATE
+sm_cvar sv_maxcmdrate    128
+sm_cvar sv_maxupdaterate 128
+sv_mincmdrate    128
+sv_minupdaterate 128
+
 exec banned_user.cfg
 AUTOEXEC
   cat <<SERVER > "${CONF}/server.cfg"
@@ -261,13 +268,13 @@ ln -sf $CONF/gamemode_competitive_server.cfg ${GAME}/csgo/cfg/gamemode_competiti
 
 create_service() {
   local SYSTEMD='/usr/lib/systemd/system/game-csgo.service'
-  cat <<STARTUP > "${CONF}/startup.sh"
+  cat <<STARTUP > "${DIR}/startup.sh"
 #!/usr/bin/env bash
 
 MAP='de_dust2'
 
 export LD_LIBRARY_PATH='${GAME}/bin:\$LD_LIBRARY_PATH' # Required to find Steam libs
-${GAME}/srcds_linux -game csgo -console -usercon +game_type 0 +game_mode 1 +mapgroup mg_active +map \$MAP
+${GAME}/srcds_linux -game csgo -console -usercon +game_type 0 +game_mode 1 +mapgroup mg_active +map \$MAP -tickrate 128
 STARTUP
   onfail "Failed to create startup script" "Startup script created"
   chmod +x ${CONF}/startup.sh
@@ -282,7 +289,7 @@ Type=simple
 User=$USER
 Group=$USER
 WorkingDirectory=$DIR
-ExecStart='${CONF}/startup.sh'
+ExecStart='${DIR}/startup.sh'
 ExecStop=/bin/kill -9 $MAINPID
 Restart=on-failure
 
