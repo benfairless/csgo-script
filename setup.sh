@@ -210,10 +210,10 @@ mp_randomspawn_los      0
 // VoIP
 sv_talk_enemy_living                        0
 sv_talk_enemy_dead                          0
-sv_deadtalk                                 0
-sv_auto_full_alltalk_during_warmup_half_end 0
+sv_deadtalk                                 1
+sv_auto_full_alltalk_during_warmup_half_end 1
 sv_ignoregrenaderadio                       0
-sv_voiceenable                              0
+sv_voiceenable                              1
 sv_alltalk                                  0
 
 // Spectating
