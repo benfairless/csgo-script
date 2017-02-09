@@ -277,7 +277,7 @@ export LD_LIBRARY_PATH='${GAME}/bin:\$LD_LIBRARY_PATH' # Required to find Steam 
 ${GAME}/srcds_linux -game csgo -console -usercon +game_type 0 +game_mode 1 +mapgroup mg_active +map \$MAP -tickrate 128
 STARTUP
   onfail "Failed to create startup script" "Startup script created"
-  chmod +x ${CONF}/startup.sh
+  chmod +x ${DIR}/startup.sh
 
   cat <<SERVICE > $SYSTEMD
 [Unit]
