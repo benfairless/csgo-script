@@ -97,7 +97,8 @@ download_game() {
 
 create_conf() {
   [[ ! -d ${CONF} ]] && sudo -u $USER mkdir -p $CONF
-  RCON=$(aspell dump master | shuf -n 1)
+  #RCON=$(aspell dump master | shuf -n 1)
+  RCON='welcome1'
   cat <<AUTOEXEC > "${CONF}/autoexec.cfg"
 log on
 hostname      "LR Tournament Server"
