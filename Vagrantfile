@@ -28,6 +28,6 @@ Vagrant.configure(2) do |config|
 
   # Run setup script
   config.vm.provision :shell,
-    inline: 'echo "192.168.99.11 puppet" > /etc/hosts'
+    path: 'setup.sh'
 
 end
