@@ -95,7 +95,7 @@ download_game() {
   [[ ! -L ${GAME} ]] && ln -sf "${GAME_PATH}/" ${GAME}
 }
 
-create_conf() {
+create_server_conf() {
   [[ ! -d ${CONF} ]] && sudo -u $USER mkdir -p $CONF
   #RCON=$(aspell dump master | shuf -n 1)
   RCON='welcome1'
@@ -132,6 +132,12 @@ sv_steamgroup_exclusive 0
 writeid
 writeip
 SERVER
+
+ln -sf $CONF/autoexec.cfg                    ${GAME}/csgo/cfg/autoexec.cfg
+ln -sf $CONF/server.cfg                      ${GAME}/csgo/cfg/server.cfg
+}
+
+create_comp_game_conf() {
   cat <<COMPETITIVE > "${CONF}/gamemode_competitive_server.cfg"
 // Game mode
 mp_halftime                         1
@@ -262,23 +268,21 @@ cl_updaterate 128
 say ">> Welcome to the LR CS:GO Tournament"
 
 COMPETITIVE
-ln -sf $CONF/autoexec.cfg                    ${GAME}/csgo/cfg/autoexec.cfg
-ln -sf $CONF/server.cfg                      ${GAME}/csgo/cfg/server.cfg
 ln -sf $CONF/gamemode_competitive_server.cfg ${GAME}/csgo/cfg/gamemode_competitive_server.cfg
 }
 
-create_service() {
-  local SYSTEMD='/usr/lib/systemd/system/game-csgo.service'
-  cat <<STARTUP > "${DIR}/startup.sh"
+create_comp_service() {
+  local SYSTEMD='/usr/lib/systemd/system/game-csgo-comp.service'
+  cat <<STARTUP > "${DIR}/startup_comp.sh"
 #!/usr/bin/env bash
 
-MAP='de_dust2'
+MAP='de_cache'
 
 export LD_LIBRARY_PATH='${GAME}/bin:\$LD_LIBRARY_PATH' # Required to find Steam libs
-${GAME}/srcds_linux -game csgo -console -usercon +game_type 0 +game_mode 1 +mapgroup mg_active +map \$MAP -tickrate 128
+${GAME}/srcds_linux -game csgo -console -usercon +game_type 0 +game_mode 1 +map \$MAP -tickrate 128 -exec gamemode_competitive_server.cfg
 STARTUP
   onfail "Failed to create startup script" "Startup script created"
-  chmod +x ${DIR}/startup.sh
+  chmod +x ${DIR}/startup_comp.sh
 
   cat <<SERVICE > $SYSTEMD
 [Unit]
@@ -290,7 +294,7 @@ Type=simple
 User=$USER
 Group=$USER
 WorkingDirectory=$DIR
-ExecStart='${DIR}/startup.sh'
+ExecStart='${DIR}/startup_comp.sh'
 ExecStop=/bin/kill -9 $MAINPID
 Restart=on-failure
 
@@ -300,13 +304,54 @@ SERVICE
   onfail "Failed to create service file" "Service file created"
   systemctl daemon-reload
   onfail "Failed to reload systemctl daemon" "Reloaded systemctl daemon"
-  ln -sf $SYSTEMD "${CONF}/game-csgo.service"
+  ln -sf $SYSTEMD "${CONF}/game-csgo-comp.service"
 }
 
-start_service() {
-  systemctl enable game-csgo >/dev/null 2>&1
+create_casual_service() {
+  local SYSTEMD='/usr/lib/systemd/system/game-csgo-casual.service'
+  cat <<STARTUP > "${DIR}/startup_casual.sh"
+#!/usr/bin/env bash
+
+export LD_LIBRARY_PATH='${GAME}/bin:\$LD_LIBRARY_PATH' # Required to find Steam libs
+${GAME}/srcds_linux -game csgo -console -usercon +game_type 1 +game_mode 0 +mapgroup mg_armsrace +map ar_shoots -tickrate 128 -exec gamemodes.txt
+STARTUP
+  onfail "Failed to create startup script" "Startup script created"
+  chmod +x ${DIR}/startup_casual.sh
+
+  cat <<SERVICE > $SYSTEMD
+[Unit]
+Description=Counter Strike : Global Offensive game server
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+Group=$USER
+WorkingDirectory=$DIR
+ExecStart='${DIR}/startup_casual.sh'
+ExecStop=/bin/kill -9 $MAINPID
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+  onfail "Failed to create service file" "Service file created"
+  systemctl daemon-reload
+  onfail "Failed to reload systemctl daemon" "Reloaded systemctl daemon"
+  ln -sf $SYSTEMD "${CONF}/game-csgo-casual.service"
+}
+
+start_comp_service() {
+  systemctl enable game-csgo-comp >/dev/null 2>&1
   onfail "Failed to set service to start on boot" "Service enabled on boot"
-  systemctl restart game-csgo
+  systemctl restart game-csgo-comp
+  onfail "Failed to launch Counter Strike service" "Counter Strike launched successfully"
+}
+
+start_casual_service() {
+  systemctl enable game-csgo-casual >/dev/null 2>&1
+  onfail "Failed to set service to start on boot" "Service enabled on boot"
+  systemctl restart game-csgo-casual
   onfail "Failed to launch Counter Strike service" "Counter Strike launched successfully"
 }
 
@@ -318,14 +363,18 @@ intro
 systemdeps
 download_steam
 download_game
-create_conf
-create_service
-start_service
+create_server_conf
+create_comp_game_conf
+#create_casual_game_conf
+create_comp_service
+create_casual_service
+start_comp_service
+start_casual_service
 
 chown -R $USER:$USER $DIR
 chmod 775 $DIR
 onfail "Failed to set appropriate permissions" "Permissions set correctly"
 
 say "CS:GO installation complete" | output SUCCESS
-say 'You can run the CS:GO server by typing `systemctl start game-csgo`' | output
+say 'You can run the CS:GO server by typing `systemctl start game-csgo-comp` or `systemctl start game-csgo-casual`' | output
 say "RCON PASSWORD: ${RCON}" | output
